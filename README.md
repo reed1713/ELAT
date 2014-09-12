@@ -8,9 +8,7 @@ recommend using the windows executable code versions of EventScan and EventShot,
 
 FEATURES
 EventShot
- 	- root directory contains a file called whitelist.txt. Already has a few processes that I added from performing my own malware analysis. 
-		You can add noisy processes to this file using python regex (i.e. Windows\\system32\\svchost.exe or you could just specify svchost.exe). 
-		It then searches the data= line, and if it matches, it will remove the entire associated event, cleaning the output.
+ 	- root directory contains a file called whitelist.txt. Already has a few processes that I added from performing my own malware analysis. You can add noisy processes to this file using python regex (i.e. Windows\\system32\\svchost.exe or you could just specify svchost.exe). It then searches the data= line, and if it matches, it will remove the entire associated event, cleaning the output.
 	- can choose from the Security, Application, System, or All event logs.
 	- generates an rough yara signature and text file overview of the diff.
 
