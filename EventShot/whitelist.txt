@@ -1,0 +1,8 @@
+Windows\\System32\\conhost.exe
+windows\\system32\\dllhost.exe
+Windows\\System32\\taskhost.exe
+Windows\\System32\\SearchProtocolHost.exe
+Windows\\System32\\SearchFilterHost.exe
+Windows\\System32\\consent.exe
+fakenet.exe
+python.exe
