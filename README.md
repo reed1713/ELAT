@@ -14,11 +14,11 @@ EventShot
 	- can choose from the Security, Application, System, or All event logs.
 	- generates an rough yara signature and text file overview of the diff.
 
-	EventScan
- 		- perform a live scan of either the Security, Application, System, or All event logs.
-		- scan multiple event logs placed in the SCAN directory.
-		- performs pattern matching using Yara.
-		- outputs a text file with a report of the findings.
+EventScan
+ 	- perform a live scan of either the Security, Application, System, or All event logs.
+	- scan multiple event logs placed in the SCAN directory.
+	- performs pattern matching using Yara.
+	- outputs a text file with a report of the findings.
 
 PROCEDURE
 1) run Eventshot on malware analysis system
