@@ -19,6 +19,7 @@ EventScan
 	- outputs a text file with a report of the findings.
 
 PROCEDURE
+
 1) run Eventshot on malware analysis system
 
 2) run malware
