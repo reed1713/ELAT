@@ -39,3 +39,4 @@ CAVEATS
 	- output will be appended to the files in the RESULTS directory, unless you delete or remove the file(s) from the RESULTS dir before executing the code again
 	- when you select the ALL option, results are appended to the file, which means so are the times. So if you have hits for the Security, Application, and System event logs, you will see the time sorted for each event log in the output file.
 	- The current yara sigs are written for vista and later event log ids.
+	- also, sorry to you pep8 enthusiasts out there, kinda crapped all over it with this project :(
