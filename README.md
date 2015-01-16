@@ -1,4 +1,4 @@
-ELAT (Event Log Analysis Toolkit)
+ELAT (Event Log Analysis Tool)
 
 SUMMARY
 I ripped off the idea for EventShot from the tool regshot (takes snapshots of the registry), and applied that same thought to the event logs. The EventShot script simply takes a snapshot of the event log(s) you select, then takes a second snapshot after you're done with your analysis, diffs the two files and parses the output. EventScan, can either scan the live system event logs against the EventLogIndicators directory of yara sigs or you can place event log files in the SCAN dir and search it with your yara sigs. Both the tools and the yara sigs together create a way for the analyst to fully scope and detect malware via the windows event logs.
