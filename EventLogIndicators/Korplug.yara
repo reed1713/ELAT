@@ -10,13 +10,13 @@ rule Korplug
 		$eventid="4688"
 		$data="ProgramData\\RasTls\\RasTls.exe"
 
-		$type="Microsoft-Windows-Security-Auditing"
-		$eventid="4688"
-		$data="ProgramData\\RasTls\\rundll32.exe"
+		$type1="Microsoft-Windows-Security-Auditing"
+		$eventid1="4688"
+		$data1="ProgramData\\RasTls\\rundll32.exe"
 
-		$type="Microsoft-Windows-Security-Auditing"
-		$eventid="4688"
-		$data="ProgramData\\RasTls\\svchost.exe"
+		$type2="Microsoft-Windows-Security-Auditing"
+		$eventid2="4688"
+		$data2="ProgramData\\RasTls\\svchost.exe"
 	condition:
 		all of them
 }

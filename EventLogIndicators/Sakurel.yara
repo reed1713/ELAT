@@ -9,9 +9,9 @@ rule Sakurel_backdoor
 		$eventid="4688"
 		$data="Windows\\System32\\sysprep\\sysprep.exe" nocase
 
-		$type="Microsoft-Windows-Security-Auditing"
-		$eventid="4688"
-		$data="AppData\\Local\\Temp\\MicroMedia\\MediaCenter.exe" nocase
+		$type1="Microsoft-Windows-Security-Auditing"
+		$eventid1="4688"
+		$data1="AppData\\Local\\Temp\\MicroMedia\\MediaCenter.exe" nocase
 	condition:
 		all of them
 }
