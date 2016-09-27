@@ -4,6 +4,15 @@ import difflib
 import ctypes
 import time
 import re
+import pywintypes
+import mmap
+import contextlib
+try:
+    from Evtx.Evtx import FileHeader, Evtx
+    from Evtx.Views import evtx_file_xml_view
+except:
+    print
+    print "[-] failed to import Evtx."
 try:
     import win32evtlog #if run on a windows box
 except:
@@ -11,7 +20,7 @@ except:
     print "[-] failed to import win32evtlog. options 1-4 wont work"
     pass
 try:
-	import yara
+    import yara
 except:
     print ""
     print "[-] failed to import yara"
@@ -31,38 +40,92 @@ STD_INPUT_HANDLE = -10
 STD_OUTPUT_HANDLE= -11
 STD_ERROR_HANDLE = -12
 
-FOREGROUND_BLUE = 0x01 # text color contains blue.
+FOREGROUND_AQUA = 0x03 # text color contains AQUA.
 FOREGROUND_GREEN= 0x02 # text color contains green.
 FOREGROUND_RED  = 0x04 # text color contains red.
+FOREGROUND_WHITE = 0x07
 FOREGROUND_INTENSITY = 0x08 # text color is intensified.
 
 std_out_handle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
 #reads and parses the specified event log. yields a generator
-def ParseEvents(eventtype, limit=None, server=None):
+def ParseEvents(eventtype,server):
 
-    server = None
-    hand = win32evtlog.OpenEventLog(server,eventtype)
+    try:
+        hand = win32evtlog.OpenEventLog(server,eventtype)
+    except pywintypes.error as e:
+        SetColor(FOREGROUND_RED | FOREGROUND_INTENSITY)
+        print e[2]
+        SetColor(FOREGROUND_WHITE)
+        os._exit(0)
     flags = win32evtlog.EVENTLOG_BACKWARDS_READ|win32evtlog.EVENTLOG_SEQUENTIAL_READ
     total = win32evtlog.GetNumberOfEventLogRecords(hand)
     events = 1
     count = 0
-
+    result = []
+    results = result.append
     while events:
         events = win32evtlog.ReadEventLog(hand, flags,0)
         if events:
             for event in events:
                 count += 1
-                time = "date_time=" + str(event.TimeGenerated)
-                cat = "type=" + str(event.SourceName)
-                eventID = "eventid=" + str(event.EventID & 0x1FFFFFFF)
-                strings = "data=" + str(event.StringInserts).replace("\\\\","\\").replace("u'","'").replace("%%","")
-                result = []
-                result.append((time, cat, eventID, strings))
+                time = "date_time= %s" % str(event.TimeGenerated)
+                cat = "type= %s" % str(event.SourceName)
+                eventID = "eventid= %s" % str(event.EventID & 0x1FFFFFFF)
+                strings = "data= %s" % str(event.StringInserts).replace("\\\\","\\").replace("u'","'").replace("%%","")
+                results((time, cat, eventID, strings))
+                bar_len = 55
+                filled_len = int(round(bar_len * count / float(total)))
+                percents = round(100.0 * count / float(total), 1)
+                bar = '=' * filled_len + '-' * (bar_len - filled_len)
+                sys.stdout.write('[%s] %s%s %s/%s \r' % (bar, percents, '%', count, total))
+                sys.stdout.flush()
             yield result
-        else:
-            break
+    
+    if total == count:
+        SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
+        print
+        print "Successfully read all", total, "records"
+        print
+    else:
+        SetColor(FOREGROUND_RED | FOREGROUND_INTENSITY)
+        print
+        print "Couldn't get all records - reported %d, but found %d" % (total, count)
+        print "(Note that some other app may have written records while we were running!)"
+        print
+    win32evtlog.CloseEventLog(hand)
 
+#converts evtx to readable format
+#https://github.com/williballenthin/python-evtx/blob/master/scripts/evtxdump.py
+def ParseEvtx(files):
+    writefile = open("..\\RESULTS\\EventLog.txt", "a+")
+    
+    with Evtx(files) as evtx:
+        total = sum(1 for i in evtx.records())
+    
+    with open(files, 'r') as f:
+        with contextlib.closing(mmap.mmap(f.fileno(), 0,
+                                          access=mmap.ACCESS_READ)) as buf:
+            fh = FileHeader(buf, 0x0)
+            writefile.write("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\" ?>")
+            writefile.write("<Events>")
+            count = 0
+            for xml, record in evtx_file_xml_view(fh):
+                count += 1
+                writefile.write(ascii(xml))
+                bar_len = 55
+                filled_len = int(round(bar_len * count / float(total)))
+                percents = round(100.0 * count / float(total), 1)
+                bar = '=' * filled_len + '-' * (bar_len - filled_len)
+                sys.stdout.write('[%s] %s%s %s/%s \r' % (bar, percents, '%', count, total))
+                sys.stdout.flush()
+                writefile.write("</Events>")
+    print
+    print
+    
+def ascii(s):
+    return s.encode('ascii', 'replace').decode('ascii')
+            
 #gets the console argument
 def GetArg():
 
@@ -87,30 +150,35 @@ def GetArg():
         choice = int(raw_input("choose # and press enter to start scan: "))
         print ""
         if choice == 1:
+            server = str(raw_input("enter asset name: "))
             eventT = ["Security"]
-            return eventT
+            return eventT, server
         elif choice == 2:
+            server = str(raw_input("enter asset name: "))
             eventT = ["Application"]
-            return eventT
+            return eventT, server
         elif choice == 3:
+            server = str(raw_input("enter asset name: "))
             eventT = ["System"]
-            return eventT
+            return eventT, server
         elif choice == 4:
+            server = str(raw_input("enter asset name: "))
             eventT = ["Security", "Application", "System"]
-            return eventT
+            return eventT, server
         elif choice == 5:
+            server = None
             eventT = 5
-            return eventT
+            return eventT, server
         else:
-            SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
+            SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
             print "[-] nope"
             print ""
             print "[-] try again"
             main()
     except ValueError:
             print ""
-            SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
-            print "[-] nope"
+            SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
+            print "[-] nope Value error"
             print ""
             print "[-] try again"
             main()
@@ -152,75 +220,93 @@ def main():
 
     report = "..\\RESULTS\\EventScan_Report.txt"
     Rulesdir = "..\\EventLogIndicators"
-    eventargs = GetArg()
+    eventargs,server = GetArg()
 
     if eventargs == 5:
         scandir = ("..\\SCAN")
         if not os.listdir(scandir) == []:
             for files in os.listdir(scandir):
-                if not os.listdir(Rulesdir) == []:
-                    for rules in os.listdir(Rulesdir):
-                        SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
-                        rule = yara.compile(Rulesdir+"\\%s"%rules, error_on_warning=True)
-                        results = Scanner(os.path.join(scandir, files), rule)
-                        print "[+] scanning: " + str(files) + " file  |  rule: " + rules + "\n"
-                        WriteReport(report, files, results, rules)
-                        if results:
-                            print "[+] found hit \n"
-                        else:
-                            SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
-                            print "[-] no hits" + "\n"
-                else:
-                    SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
-                    print "[-] no yara rules found in the EventLogIndicators directory"
-                    time.sleep(3)
-                    os._exit(0)
+                if files.endswith('.evtx'):
+                    SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+                    print "[+] writing: " + files + " in Scan Directory\n"
+                    ParseEvtx(scandir+'\\'+files)
+                
         else:
-            SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
-            print "[-] no files found in the SCAN directory"
+                SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
+                print "[-] no files found in the SCAN directory"
+                time.sleep(3)
+                os._exit(0)
+            
+        if not os.listdir(Rulesdir) == []:
+            for rules in os.listdir(Rulesdir):
+                rule = yara.compile(Rulesdir+"\\%s"%rules, error_on_warning=False)
+                SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+                print "[+] scanning: Event Logs From Scan Directory  |  rule: " + rules + "\n"
+                results = Scanner("..\\RESULTS\\EventLog.txt", rule)
+                WriteReport(report, files, results, rules)
+                if results:
+                    SetColor(FOREGROUND_RED | FOREGROUND_INTENSITY)
+                    print "[+] found hit \n"
+                    SetColor(FOREGROUND_WHITE)
+                else:
+                    SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
+                    print "[-] no hits" + "\n"
+                    SetColor(FOREGROUND_WHITE)
+        else:
+            SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
+            print "[-] no yara rules found in the EventLogIndicators directory"
             time.sleep(3)
             os._exit(0)
 
         SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
         raw_input("scan report in the RESULTS directory \n")
+        SetColor(FOREGROUND_WHITE)
 
     else:
         for eventarg in eventargs:
             SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
-            results = ParseEvents(eventarg)
+            results = ParseEvents(eventarg,server)
             if not os.listdir(Rulesdir) == []:
                 print "[+] writing: " + eventarg + " event log" + "\n"
+                writefile = open("..\\RESULTS\\EventLog.txt", "a+")
+                output = writefile.write
                 if results:
                     for result in results:
-                        linelist1 = result[0][0] + "\n" + result[0][1] + "\n" + result[0][2] + "\n" + result[0][3] + "\n"
-                        writefile = open("..\\RESULTS\\EventLog.txt", "a+")
-                        writefile.write(linelist1)
-                        writefile.close() #have to close the file before yara scan, or get permission errors
-                file = open("..\\RESULTS\\EventLog.txt", "rb")
-
-                for rules in os.listdir(Rulesdir):
-                    files = eventarg
-                    rule = yara.compile(Rulesdir+"\\%s"%rules, error_on_warning=True)
-                    SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
-                    print "[+] scanning: " + str(files) + " Event Log  |  rule: " + rules + "\n"
-                    results = Scanner("..\\RESULTS\\EventLog.txt", rule)
-                    WriteReport(report, files, results, rules)
-                    if results:
-                        print "[+] found hit \n"
-                    else:
-                        SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
-                        print "[-] no hits" + "\n"
+                        linelist1 = "%s\n%s\n%s\n%s\n" % (result[0][0], result[0][1], result[0][2], result[0][3])
+                        output(linelist1)
+                writefile.close() #have to close the file before yara scan, or get permission errors
             else:
-                SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
+                SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
                 print "[-] no yara rules found in the EventLogIndicators directory"
+                SetColor(FOREGROUND_WHITE)
                 time.sleep(3)
                 os._exit(0)
 
+        file = open("..\\RESULTS\\EventLog.txt", "rb")
+
+        for rules in os.listdir(Rulesdir):
+            files = ', '.join(eventargs)
+            rule = yara.compile(Rulesdir+"\\%s"%rules, error_on_warning=False)
+            SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+            print "[+] scanning: " + str(files) + " Event Log  |  rule: " + rules + "\n"
+            results = Scanner("..\\RESULTS\\EventLog.txt", rule)
+            WriteReport(report, files, results, rules)
+            if results:
+                SetColor(FOREGROUND_RED | FOREGROUND_INTENSITY)
+                print "[+] found hit \n"
+                SetColor(FOREGROUND_WHITE)
+            else:
+                SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
+                print "[-] no hits" + "\n"
+                SetColor(FOREGROUND_WHITE)        
+                
         SetColor(FOREGROUND_GREEN | FOREGROUND_INTENSITY)
         raw_input("scan report and event log text file in the RESULTS directory \n")
+        SetColor(FOREGROUND_WHITE)
 
 if __name__ == "__main__":
-
+    
+    ctypes.windll.kernel32.SetConsoleTitleA("EventScan")
     SetColor(FOREGROUND_RED | FOREGROUND_INTENSITY)
     print " _____________________________________________________________"
     print "|  _______     _______ _   _ _____ ____   ____    _    _   _  |"
@@ -233,8 +319,9 @@ if __name__ == "__main__":
     if ctypes.windll.shell32.IsUserAnAdmin():
             main()
     else:
-        SetColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY)
+        SetColor(FOREGROUND_AQUA | FOREGROUND_INTENSITY)
         print ""
         print "[-] needs to be run as admin" + "\n"
+        SetColor(FOREGROUND_WHITE)
         time.sleep(3)
         os._exit(0)
