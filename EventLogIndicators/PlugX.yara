@@ -9,13 +9,13 @@ rule PlugX
 		$eventid="4688"
 		$data=/\\AppData\\Roaming\\[0-9]{9,12}\VMwareCplLauncher\.exe/
 
-		$type="Microsoft-Windows-Security-Auditing"
-		$eventid="4688"
-		$data="\\Windows\\System32\\rundll32.exe"
+		$type1="Microsoft-Windows-Security-Auditing"
+		$eventid1="4688"
+		$data1="\\Windows\\System32\\rundll32.exe"
 
-		$type="Microsoft-Windows-Security-Auditing"
-		$eventid="4688"
-		$data="Program Files\\Internet Explorer\\iexplore.exe"
+		$type2="Microsoft-Windows-Security-Auditing"
+		$eventid2="4688"
+		$data2="Program Files\\Internet Explorer\\iexplore.exe"
 	condition:
 		all of them
 }

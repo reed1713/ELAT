@@ -1,4 +1,4 @@
-rule Backdoor.Jolob
+rule Backdoor_Jolob
 {
 	meta:
 		maltype = "Backdoor.Jolob"
@@ -7,24 +7,24 @@ rule Backdoor.Jolob
 	strings:   
 		$type = "Microsoft-Windows-Security-Auditing"
 		$eventid = "4673"
-		$data = "Security"
-		$data = "SeCreateGlobalPrivilege"
-		$data = "Windows\\System32\\sysprep\\sysprep.exe" nocase
+		$data1 = "Security"
+		$data2 = "SeCreateGlobalPrivilege"
+		$data3 = "Windows\\System32\\sysprep\\sysprep.exe" nocase
         
-		$type = "Microsoft-Windows-Security-Auditing"
-		$eventid = "4688"
-		$data = "Windows\\System32\\sysprep\\sysprep.exe" nocase
+		$type1 = "Microsoft-Windows-Security-Auditing"
+		$eventid1 = "4688"
+		$data4 = "Windows\\System32\\sysprep\\sysprep.exe" nocase
         
-		$type = "Service Control Manager"
-		$eventid = "7036"
-		$data = "Network Access Management Agent"
-		$data = "running"
+		$type2 = "Service Control Manager"
+		$eventid2 = "7036"
+		$data5 = "Network Access Management Agent"
+		$data6 = "running"
         
-		$type = "Service Control Manager"
-		$eventid = "7045"
-		$data = "Network Access Management Agent"
-		$data = "user mode service"
-		$data = "auto start"      
+		$type3 = "Service Control Manager"
+		$eventid3 = "7045"
+		$data7 = "Network Access Management Agent"
+		$data8 = "user mode service"
+		$data9 = "auto start"      
     condition:
     	all of them
 }
